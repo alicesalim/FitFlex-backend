@@ -16,12 +16,12 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <finalName>app</finalName>
               <transformers>
                 <transformer>
                   <mainClass>app.Aplicacao</mainClass>
                 </transformer>
               </transformers>
-              <finalName>app</finalName>
             </configuration>
           </execution>
         </executions>

@@ -1,25 +1,16 @@
-# Etapa 1: Build do projeto usando Maven + JDK 17
+# Etapa 1: Build do projeto
 FROM maven:3.9.0-eclipse-temurin-17 AS build
 
 WORKDIR /app
-
-# Copia os arquivos necessários para o build
 COPY pom.xml .
 COPY src ./src
-
-# Roda o build do Maven, ignorando testes
 RUN mvn clean package -DskipTests
 
-# Etapa 2: Imagem leve para rodar a aplicação
+# Etapa 2: Imagem leve de execução
 FROM eclipse-temurin:17-jdk-alpine
-
 WORKDIR /app
 
-# Copia o jar gerado da etapa anterior
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/target/app.jar app.jar
+EXPOSE 8080  # ou 4567, dependendo da porta do Spark
 
-# Expõe a porta 8080 (padrão do Spring Boot / backend Java)
-EXPOSE 8080
-
-# Comando para rodar o jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

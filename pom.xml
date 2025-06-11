@@ -6,35 +6,35 @@
   <artifactId>maven.demo</artifactId>
   <version>0.0.1-SNAPSHOT</version>
 
- <build>
-  <plugins>
-    <!-- Apenas o shade plugin -->
-    <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-shade-plugin</artifactId>
-      <version>3.5.0</version>
-      <executions>
-        <execution>
-          <phase>package</phase>
-          <goals>
-            <goal>shade</goal>
-          </goals>
-          <configuration>
-            <transformers>
-              <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                <mainClass>app.Aplicacao</mainClass>
-              </transformer>
-            </transformers>
-            <finalName>app</finalName> <!-- nome mais simples -->
-          </configuration>
-        </execution>
-      </executions>
-    </plugin>
-  </plugins>
-</build>
+  <build>
+    <plugins>
+      <!-- Plugin que cria o JAR executável com todas as dependências -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <finalName>app</finalName> <!-- Nome simplificado do JAR final -->
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>app.Aplicacao</mainClass> <!-- Substitua se a classe main estiver em outro local -->
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
-    <!-- PostgreSQL JDBC driver -->
+    <!-- Driver JDBC para PostgreSQL -->
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
@@ -48,28 +48,28 @@
       <version>2.9.4</version>
     </dependency>
 
-    <!-- JSON serializer/deserializer -->
+    <!-- Gson para manipulação de JSON -->
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>2.10.1</version>
     </dependency>
 
-    <!-- SLF4J logging -->
+    <!-- Logger simples via SLF4J -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
       <version>2.0.9</version>
     </dependency>
 
-    <!-- File upload library -->
+    <!-- Suporte a upload de arquivos -->
     <dependency>
       <groupId>commons-fileupload</groupId>
       <artifactId>commons-fileupload</artifactId>
       <version>1.4</version>
     </dependency>
 
-    <!-- dotenv support -->
+    <!-- Suporte a variáveis de ambiente .env -->
     <dependency>
       <groupId>io.github.cdimascio</groupId>
       <artifactId>java-dotenv</artifactId>
