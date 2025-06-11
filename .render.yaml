@@ -3,7 +3,7 @@ services:
     name: fitflex-backend
     env: java
     buildCommand: ./build.sh
-    startCommand: java -jar target/maven.demo-0.0.1-SNAPSHOT.jar
+    startCommand: java -jar target/app.jar
     plan: free
     branch: main
     autoDeploy: true
