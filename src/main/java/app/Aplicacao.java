@@ -1,5 +1,7 @@
 package app;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -41,7 +43,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 
 public class Aplicacao {
     public static void main(String[] args) {
-        port(4567);
+        port(8080);
         staticFiles.location("/public");
         Dotenv dotenv = Dotenv.load(); // Carrega o .env
         enableCORS("*", "*", "*");
@@ -65,7 +67,7 @@ public class Aplicacao {
             try {
                 Part filePart = req.raw().getPart("file");
                 InputStream fileInputStream = filePart.getInputStream();
-                byte[] imageBytes = fileInputStream.readAllBytes();
+                byte[] imageBytes = readAllBytes(fileInputStream);
 
                 // Configurações da API da Azure
                 String subscriptionKey = dotenv.get("API_KEY");
@@ -81,13 +83,14 @@ public class Aplicacao {
                 connection.setDoOutput(true);
                 connection.getOutputStream().write(imageBytes);
 
-                if (connection.getResponseCode() != 202) {
+                int responseCode = connection.getResponseCode();
+                if (responseCode != 202) {
                     res.status(500);
                     return "{\"erro\":\"Erro ao enviar imagem para análise.\"}";
                 }
 
-                // Obtém a URL de operação para verificar o status
-                String operationLocation = connection.getHeaderField("operation-location");
+                // Pega o cabeçalho Operation-Location para a URL da análise
+                String operationLocation = connection.getHeaderField("Operation-Location");
 
                 // Aguarda a conclusão da análise
                 String result = null;
@@ -98,7 +101,7 @@ public class Aplicacao {
                     resultConnection.setRequestProperty("Ocp-Apim-Subscription-Key", subscriptionKey);
 
                     InputStream resultStream = resultConnection.getInputStream();
-                    String jsonResponse = new String(resultStream.readAllBytes());
+                    String jsonResponse = new String(readAllBytes(resultStream));
                     JsonObject json = JsonParser.parseString(jsonResponse).getAsJsonObject();
 
                     if ("succeeded".equals(json.get("status").getAsString())) {
@@ -116,7 +119,7 @@ public class Aplicacao {
 
             } catch (Exception e) {
                 res.status(500);
-                return "{\"erro\":\"Erro ao processar a imagem.\"}";
+                return "{\"erro\":\"Erro ao processar a imagem: " + e.getMessage() + "\"}";
             }
         });
 
@@ -647,6 +650,18 @@ public class Aplicacao {
         });
     }
 
+    // Método auxiliar para ler todos os bytes de um InputStream (compatível com Java 8)
+    private static byte[] readAllBytes(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[16384];
+        while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
+        }
+        buffer.flush();
+        return buffer.toByteArray();
+    }
+
     public static void enableCORS(final String origin, final String methods, final String headers) {
         options("/*", (request, response) -> {
             String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
@@ -663,10 +678,11 @@ public class Aplicacao {
         });
 
         before((request, response) -> {
-
             response.header("Access-Control-Allow-Origin", origin);
             response.header("Access-Control-Request-Method", methods);
             response.header("Access-Control-Allow-Headers", headers);
+            // Some CORS requests prefer no-cache, optional
+            response.header("Cache-Control", "no-cache");
         });
     }
 }
