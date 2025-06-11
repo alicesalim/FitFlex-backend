@@ -47,7 +47,18 @@ public class Aplicacao {
     private static Dotenv dotenv;
     
     public static void main(String[] args) {
-        port(8080);
+        // Configuração da porta - permitir substituição pelo Render
+        int porta = 8080;
+        String portaEnv = System.getenv("PORT");
+        if (portaEnv != null && !portaEnv.isEmpty()) {
+            try {
+                porta = Integer.parseInt(portaEnv);
+            } catch (NumberFormatException e) {
+                System.out.println("Erro ao converter variável PORT. Usando porta padrão 8080.");
+            }
+        }
+        port(porta);
+        
         staticFiles.location("/public");
         
         // Carrega o .env se existir, senão usa variáveis de ambiente do sistema
@@ -69,6 +80,12 @@ public class Aplicacao {
         FavoritarService favoritarService = new FavoritarService(); // <-- Instancia FavoritarService
         AvaliarService avaliarService = new AvaliarService(); // <-- Instancia FavoritarService
         Gson gson = new Gson();
+        
+        // Rota para a raiz - verificar se o servidor está respondendo
+        get("/", (req, res) -> {
+            res.type("application/json");
+            return "{\"status\":\"online\",\"mensagem\":\"FitFlex API está funcionando!\"}";
+        });
 
         post("/analisar-imagem", (req, res) -> {
             res.type("application/json");
