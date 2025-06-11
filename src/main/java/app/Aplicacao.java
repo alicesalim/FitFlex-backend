@@ -42,10 +42,23 @@ import static spark.Spark.staticFiles;
 import io.github.cdimascio.dotenv.Dotenv;
 
 public class Aplicacao {
+    
+    // Declaração como variável de classe estática
+    private static Dotenv dotenv;
+    
     public static void main(String[] args) {
         port(8080);
         staticFiles.location("/public");
-        Dotenv dotenv = Dotenv.load(); // Carrega o .env
+        
+        // Carrega o .env se existir, senão usa variáveis de ambiente do sistema
+        try {
+            dotenv = Dotenv.load();
+            System.out.println("Arquivo .env carregado com sucesso.");
+        } catch (Exception e) {
+            System.out.println("Arquivo .env não encontrado. Usando variáveis de ambiente do sistema.");
+            dotenv = Dotenv.configure().ignoreIfMissing().load();
+        }
+        
         enableCORS("*", "*", "*");
 
         IngredienteService ingredienteService = new IngredienteService();
@@ -69,8 +82,8 @@ public class Aplicacao {
                 InputStream fileInputStream = filePart.getInputStream();
                 byte[] imageBytes = readAllBytes(fileInputStream);
 
-                // Configurações da API da Azure
-                String subscriptionKey = dotenv.get("API_KEY");
+                // Obtem a chave da API
+                String subscriptionKey = getApiKey();
                 String endpoint = "https://fitflexai.cognitiveservices.azure.com/";
                 String url = endpoint + "vision/v3.2/read/analyze";
 
@@ -648,6 +661,19 @@ public class Aplicacao {
                 return "{\"erro\":\"" + e.getMessage() + "\"}";
             }
         });
+    }
+    
+    // Método para obter a chave da API
+    private static String getApiKey() throws Exception {
+        // Tenta obter do dotenv, senão usa variável de ambiente diretamente
+        String apiKey = dotenv.get("API_KEY");
+        if (apiKey == null || apiKey.isEmpty()) {
+            apiKey = System.getenv("API_KEY");
+            if (apiKey == null || apiKey.isEmpty()) {
+                throw new Exception("API_KEY não encontrada nas variáveis de ambiente");
+            }
+        }
+        return apiKey;
     }
 
     // Método auxiliar para ler todos os bytes de um InputStream (compatível com Java 8)
