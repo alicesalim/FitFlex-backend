@@ -24,6 +24,7 @@ import model.ReceitaDTO;
 import model.ReceitaIngrediente;
 import model.Usuario;
 import model.UsuarioDTO;
+import service.EmailUtil;
 import service.FavoritarService;
 import service.IngredienteService;
 import service.ReceitaIngredienteService;
@@ -225,6 +226,23 @@ public class Aplicacao {
 
                 boolean sucesso = usuarioService.cadastrarUsuario(usuario);
                 if (sucesso) {
+                     // Envia e-mail de boas-vindas em background
+                     new Thread(() -> {
+                        try {
+                            String assunto = "Bem-vindo ao FitFlex!";
+                            String corpo = "<div style='font-family:sans-serif;text-align:center;'>"
+                                + "<img src='https://i.imgur.com/6WTOj8D.png' alt='FitFlex' style='width:120px; margin-bottom:24px;'/>"
+                                + "<h2 style='color:#222;'>Olá, " + usuario.getNome() + "!</h2>"
+                                + "<p style='font-size:1.1rem;'>Seu cadastro foi realizado com sucesso.<br>"
+                                + "Agora você pode aproveitar todos os recursos do FitFlex.</p>"
+                                + "<p style='color:#555;'>Se não foi você que realizou este cadastro, ignore este e-mail.</p>"
+                                + "</div>";
+                            EmailUtil.enviarEmail(usuario.getEmail(), assunto, corpo);
+                        } catch (Exception e) {
+                            System.out.println("Erro ao enviar e-mail de boas-vindas: " + e.getMessage());
+                        }
+                    }).start();
+    
                     res.status(201);
                     return gson.toJson(usuario);
                 } else {

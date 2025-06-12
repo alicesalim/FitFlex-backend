@@ -90,5 +90,12 @@
       <artifactId>java-dotenv</artifactId>
       <version>5.2.2</version>
     </dependency>
+
+    <!-- JavaMail API -->
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>javax.mail</artifactId>
+      <version>1.6.2</version>
+    </dependency>
   </dependencies>
 </project>
