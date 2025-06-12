@@ -9,7 +9,6 @@ import java.util.List;
 
 import model.Usuario;
 
-
 public class UsuarioDAO extends DAO {
 
     public UsuarioDAO() {
@@ -21,7 +20,6 @@ public class UsuarioDAO extends DAO {
     public void closeDAO() {
         close();
     }
-
 
     private String gerarHashMD5(String senha) {
         try {
@@ -47,7 +45,7 @@ public class UsuarioDAO extends DAO {
             if (usuario.getImagemPerfil() != null) {
                 stmt.setBytes(4, usuario.getImagemPerfil());
             } else {
-                stmt.setNull(4, java.sql.Types.BLOB);
+                stmt.setNull(4, java.sql.Types.BINARY);
             }
 
             int affectedRows = stmt.executeUpdate();
@@ -93,12 +91,11 @@ public class UsuarioDAO extends DAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return new Usuario(
-                        rs.getInt("id"),
-                        rs.getString("nome"),
-                        rs.getString("email"),
-                        rs.getString("senha"),
-                        rs.getBytes("imagem_perfil")
-                    );
+                            rs.getInt("id"),
+                            rs.getString("nome"),
+                            rs.getString("email"),
+                            rs.getString("senha"),
+                            rs.getBytes("imagem_perfil"));
                 }
             }
         } catch (SQLException e) {
@@ -116,12 +113,11 @@ public class UsuarioDAO extends DAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return new Usuario(
-                        rs.getInt("id"),
-                        rs.getString("nome"),
-                        rs.getString("email"),
-                        rs.getString("senha"),
-                        rs.getBytes("imagem_perfil")
-                    );
+                            rs.getInt("id"),
+                            rs.getString("nome"),
+                            rs.getString("email"),
+                            rs.getString("senha"),
+                            rs.getBytes("imagem_perfil"));
                 }
             }
         } catch (SQLException e) {
@@ -135,15 +131,14 @@ public class UsuarioDAO extends DAO {
         String sql = "SELECT * FROM usuario";
 
         try (PreparedStatement stmt = conexao.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 usuarios.add(new Usuario(
-                    rs.getInt("id"),
-                    rs.getString("nome"),
-                    rs.getString("email"),
-                    rs.getString("senha"),
-                    rs.getBytes("imagem_perfil")
-                ));
+                        rs.getInt("id"),
+                        rs.getString("nome"),
+                        rs.getString("email"),
+                        rs.getString("senha"),
+                        rs.getBytes("imagem_perfil")));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -152,7 +147,6 @@ public class UsuarioDAO extends DAO {
     }
 
     public boolean atualizar(Usuario usuario) {
-
 
         String sql = "UPDATE usuario SET nome = ?, email = ?, senha = ?, imagem_perfil = ? WHERE id = ?";
         try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
@@ -183,5 +177,103 @@ public class UsuarioDAO extends DAO {
         }
     }
 
-    // Pode adicionar outros métodos como buscar por nome, etc, no mesmo estilo.
+    public boolean verificarSenha(int usuarioId, String senhaInformada) {
+        String sql = "SELECT senha FROM usuario WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setInt(1, usuarioId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    String senhaHashBanco = rs.getString("senha");
+                    String senhaHashInformada = gerarHashMD5(senhaInformada);
+                    return senhaHashBanco != null && senhaHashBanco.equals(senhaHashInformada);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public Usuario buscarPorEmail(String email) {
+        String sql = "SELECT id, nome, email, senha, imagem_perfil FROM usuario WHERE email = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Usuario(
+                            rs.getInt("id"),
+                            rs.getString("nome"),
+                            rs.getString("email"),
+                            rs.getString("senha"),
+                            rs.getBytes("imagem_perfil"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Salvar token de recuperação
+    public void salvarTokenRecuperacao(int usuarioId, String token) {
+        String sql = "UPDATE usuario SET token_recuperacao = ?, token_expira_em = ? WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, token);
+            // Define expiração para 1 hora a partir de agora (opcional)
+            stmt.setTimestamp(2, new java.sql.Timestamp(System.currentTimeMillis() + 3600 * 1000));
+            stmt.setInt(3, usuarioId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Buscar usuário por token de recuperação
+    public Usuario buscarPorTokenRecuperacao(String token) {
+        String sql = "SELECT id, nome, email, senha, imagem_perfil, token_expira_em FROM usuario WHERE token_recuperacao = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, token);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    // Verifica expiração do token (opcional)
+                    Timestamp expiraEm = rs.getTimestamp("token_expira_em");
+                    if (expiraEm != null && expiraEm.before(new java.util.Date())) {
+                        return null; // Token expirado
+                    }
+                    return new Usuario(
+                            rs.getInt("id"),
+                            rs.getString("nome"),
+                            rs.getString("email"),
+                            rs.getString("senha"),
+                            rs.getBytes("imagem_perfil"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Atualizar senha do usuário
+    public void atualizarSenha(Usuario usuario) {
+        String sql = "UPDATE usuario SET senha = ? WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, gerarHashMD5(usuario.getSenha()));
+            stmt.setInt(2, usuario.getId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Remover token de recuperação
+    public void removerTokenRecuperacao(int usuarioId) {
+        String sql = "UPDATE usuario SET token_recuperacao = NULL, token_expira_em = NULL WHERE id = ?";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setInt(1, usuarioId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

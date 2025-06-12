@@ -38,14 +38,38 @@ public class UserService {
     }
 
     // Atualizar usuário
-    public boolean atualizarUsuario(Usuario usuario) throws Exception {
-        // Você pode colocar validações aqui também
-        return usuarioDAO.atualizar(usuario);
-    }
+public boolean atualizarUsuario(Usuario usuario) throws Exception {
+    return usuarioDAO.atualizar(usuario);
+}
 
     // Excluir usuário pelo ID
     public boolean excluirUsuario(int idUsuario) {
         return usuarioDAO.excluir(idUsuario);
     }
     
+
+        // Buscar usuário por e-mail
+    public Usuario buscarUsuarioPorEmail(String email) {
+        return usuarioDAO.buscarPorEmail(email);
+    }
+
+    // Salvar token de recuperação
+    public void salvarTokenRecuperacao(int usuarioId, String token) {
+        usuarioDAO.salvarTokenRecuperacao(usuarioId, token);
+    }
+
+    // Buscar usuário por token de recuperação
+    public Usuario buscarUsuarioPorToken(String token) {
+        return usuarioDAO.buscarPorTokenRecuperacao(token);
+    }
+
+    // Atualizar senha do usuário
+    public void atualizarSenha(Usuario usuario) {
+        usuarioDAO.atualizarSenha(usuario);
+    }
+
+    // Remover token de recuperação
+    public void removerTokenRecuperacao(int usuarioId) {
+        usuarioDAO.removerTokenRecuperacao(usuarioId);
+    }
 }

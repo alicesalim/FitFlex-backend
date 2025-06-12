@@ -342,6 +342,69 @@ public class Aplicacao {
                 return "{\"erro\":\"Usuário não encontrado.\"}";
             }
         });
+                // ROTA: Solicitar recuperação de senhaMore actions
+post("/usuario/recuperar-senha", (req, res) -> {
+    res.type("application/json");
+    try {
+        JsonObject body = JsonParser.parseString(req.body()).getAsJsonObject();
+        String email = body.get("email").getAsString();
+
+        Usuario usuario = usuarioService.buscarUsuarioPorEmail(email);
+        if (usuario == null) {
+            res.status(404);
+            return "{\"erro\":\"Usuário não encontrado.\"}";
+        }
+
+        // Gere um token de recuperação (exemplo simples, use algo mais seguro em produção)
+        String token = java.util.UUID.randomUUID().toString();
+        usuarioService.salvarTokenRecuperacao(usuario.getId(), token);
+
+        // Envie o token por e-mail
+        String link = "http://localhost:3000/redefinir-senha?token=" + token;
+String corpo = "<div style='text-align:center; font-family:sans-serif;'>"
+    + "<img src='https://i.imgur.com/6WTOj8D.png' alt='FitFlex' style='width:120px; margin-bottom:24px;'/>"
+    + "<h2 style='color:#222;'>Recuperação de senha FitFlex</h2>"
+    + "<p style='font-size:1.1rem;'>Clique no botão abaixo para redefinir sua senha:</p>"
+    + "<a href='" + link + "' style='display:inline-block;padding:12px 28px;background:#86C019;color:#fff;text-decoration:none;border-radius:5px;font-size:1.1rem;margin:20px 0;'>Redefinir senha</a>"
+    + "<p style='color:#555;'>Ou copie e cole este link no navegador:<br><span style='word-break:break-all;'>" + link + "</span></p>"
+    + "</div>";
+        try {
+            EmailUtil.enviarEmail(usuario.getEmail(), "Recuperação de senha", corpo);
+        } catch (Exception e) {
+            System.out.println("Erro ao enviar e-mail: " + e.getMessage());
+        }
+
+        return "{\"mensagem\":\"Se o e-mail existir, um link de recuperação foi enviado.\"}";
+    } catch (Exception e) {
+        res.status(400);
+        return "{\"erro\":\"" + e.getMessage() + "\"}";
+    }
+});
+
+// ROTA: Redefinir senha usando o token
+post("/usuario/redefinir-senha", (req, res) -> {
+    res.type("application/json");
+    try {
+        JsonObject body = JsonParser.parseString(req.body()).getAsJsonObject();
+        String token = body.get("token").getAsString();
+        String novaSenha = body.get("novaSenha").getAsString();
+
+        Usuario usuario = usuarioService.buscarUsuarioPorToken(token);
+        if (usuario == null) {
+            res.status(400);
+            return "{\"erro\":\"Token inválido ou expirado.\"}";
+        }
+
+        usuario.setSenha(novaSenha);
+        usuarioService.atualizarSenha(usuario);
+        usuarioService.removerTokenRecuperacao(usuario.getId());
+
+        return "{\"mensagem\":\"Senha redefinida com sucesso.\"}";
+    } catch (Exception e) {
+        res.status(400);
+        return "{\"erro\":\"" + e.getMessage() + "\"}";
+    }
+});
 
         post("/receita", (req, res) -> {
             res.type("application/json");
